@@ -1,6 +1,7 @@
 import requests
 import json
 
+
 def emotion_detector(text_to_analyze):
     url = 'https://sn-watson-emotion.labs.skills.network/v1/watson.runtime.nlp.v1/NlpService/EmotionPredict'
     myobj = {"raw_document": {"text": text_to_analyze}}
@@ -21,7 +22,7 @@ def emotion_detector(text_to_analyze):
         response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
 
         json_response = response.json()
-        emotions = json_response['emotionPredictions']['emotionMentions']['emotion']
+        emotions = json_response['emotionPredictions'][0]['emotionMentions'][0]['emotion']
         dominant_emotion = max(emotions, key=emotions.get, default=None)
         emotion_response = {
             **emotions,

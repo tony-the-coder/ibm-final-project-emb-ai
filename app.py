@@ -1,12 +1,31 @@
-from flask import Flask, render_template, request, jsonify
+"""
+This is a final project for the IBM AI Developer Professional Certificate course
+"""
+
+
 import json
-import EmotionDetection.emotion_detection as emotion_detection
+import requests
+from flask import Flask, render_template, request, jsonify
+from EmotionDetection.emotion_detection import emotion_detector as emotion_detection
+
+
+
 app = Flask(__name__)
+
+
+
 @app.route('/')
 def index():
+    """Renders the index.html template."""
     return render_template('index.html')
+
+
+
 @app.route('/emotionDetector', methods=['GET', 'POST'])
 def analyze_emotion():
+    """
+    Analyzes the emotion of the provided text.
+    """
     if request.method == 'POST':
         text_to_analyze = request.form.get('textToAnalyze')
     elif request.method == 'GET':
@@ -18,7 +37,7 @@ def analyze_emotion():
         return jsonify({"error": "No text provided"}), 400
 
     try:
-        response = emotion_detection.emotion_detector(text_to_analyze)
+        response = emotion_detection(text_to_analyze)
         json_response = json.loads(response)
 
         if "error" in json_response:
@@ -36,5 +55,9 @@ def analyze_emotion():
 
         return jsonify({"result": output_string}), 200
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    # except Exception as e:
+    #     return jsonify({"error": str(e)}), 500
+
+    except requests.exceptions.RequestException as e:
+        print(f"Request Error: {e}")
+        return json.dumps({"error": str(e)})
