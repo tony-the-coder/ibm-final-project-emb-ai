@@ -6,31 +6,37 @@ def emotion_detector(text_to_analyze):
     myobj = {"raw_document": {"text": text_to_analyze}}
     header = {"grpc-metadata-mm-model-id": "emotion_aggregated-workflow_lang_en_stock"}
 
-    response = requests.post(url, json=myobj, headers=header, timeout=10)
+    if not text_to_analyze or text_to_analyze.strip() == "":  # Check for blank input FIRST
+        return json.dumps({
+            "anger": None,
+            "disgust": None,
+            "fear": None,
+            "joy": None,
+            "sadness": None,
+            "dominant_emotion": None
+        })
 
-    if response.status_code == 200:
-        try:
-            json_response = response.json()
-            emotions = json_response['emotionPredictions'][0]['emotionMentions'][0]['emotion']
-            dominant_emotion = max(emotions, key=emotions.get, default=None)
-            emotion_response = {
-                **emotions,
-                'dominant_emotion': dominant_emotion
-            }
-            json_string = json.dumps(emotion_response, indent=4)  
-            print(json_string)
-            return json_string
+    try:
+        response = requests.post(url, json=myobj, headers=header, timeout=10)
+        response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
 
-        except (KeyError, IndexError) as e:
-            print(f"Error extracting text from JSON: {e}")
-            print(json.dumps(json_response, indent=4)) # Print the full JSON for debugging
-            return "Error: Could not extract text"
+        json_response = response.json()
+        emotions = json_response['emotionPredictions']['emotionMentions']['emotion']
+        dominant_emotion = max(emotions, key=emotions.get, default=None)
+        emotion_response = {
+            **emotions,
+            'dominant_emotion': dominant_emotion
+        }
+        return json.dumps(emotion_response, indent=4)
 
-    else:
-        print(f"Error: {response.status_code}")
-        print(response.text)
-        return f"Error: {response.status_code}"
+    except requests.exceptions.RequestException as e:
+        print(f"Request Error: {e}")
+        return json.dumps({"error": str(e)})  # Return JSON error message
 
+    except (KeyError, IndexError) as e:
+        print(f"JSON Error: {e}")
+        return json.dumps({"error": "Could not extract text from API response"})
 
-
-
+    except Exception as e:
+        print(f"Unexpected Error: {e}")
+        return json.dumps({"error": "An unexpected error occurred"})
